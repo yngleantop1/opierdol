@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ynglean On top! ⚡</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            position: relative; /* Dodajemy pozycjonowanie dla tła wideo */
+        }
+
+        /* Stylizacja wideo jako tło */
+        #video-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Wypełnia całe tło, przycięcie przy zachowaniu proporcji */
+            z-index: -2;
+            pointer-events: none; /* Uniemożliwia interakcję z wideo */
+        }
+
+        /* Stylizacja canvas jako tło */
+        #canvas-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none; /* Uniemożliwia interakcję z canvas */
+        }
+
+        .header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            font-size: 100px;
+            animation: colorChange 1s infinite alternate;
+            z-index: 1;
+            position: relative;
+            color: white; /* Ustawienie koloru tekstu na biały */
+        }
+
+        @keyframes colorChange {
+            0% { color: rgb(255, 0, 0); }
+            33% { color: rgb(0, 255, 0); }
+            66% { color: rgb(0, 0, 255); }
+            100% { color: rgb(255, 0, 0); }
+        }
+
+        .rotating-image {
+            width: 200px;
+            height: 200px;
+            animation: rotate 1s linear infinite, borderColorChange 1s infinite alternate;
+            border: 30px solid rgb(255, 0, 0);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Wyśrodkowanie obrazu */
+            z-index: 1;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes borderColorChange {
+            0% { border-color: rgb(255, 0, 0); }
+            33% { border-color: rgb(0, 255, 0); }
+            50% { border-color: rgb(231, 223, 5); }
+            66% { border-color: rgb(0, 0, 255); }
+            100% { border-color: rgb(229, 7, 226); }
+        }
+
+        .star {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 100%;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: starFade 1s ease-out forwards;
+        }
+
+        @keyframes starFade {
+            to {
+                opacity: 0;
+                transform: scale(2);
+            }
+        }
+    </style>
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        function createStar(x, y) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = `${x}px`;
+            star.style.top = `${y}px`;
+            document.body.appendChild(star);
+            setTimeout(() => {
+                star.remove();
+            }, 1000);
+        }
+
+        document.addEventListener('mousemove', event => {
+            createStar(event.pageX, event.pageY);
+        });
+
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('canvas-background');
+            const ctx = canvas.getContext('2d');
+
+            let width, height;
+            const points = [];
+            const numPoints = 200; // Zwiększamy liczbę punktów
+            const maxDistance = 100; // Ustalamy maksymalną odległość między punktami
+
+            let mouseX = 0, mouseY = 0; // Położenie kursora
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+
+            function init() {
+                for (let i = 0; i < numPoints; i++) {
+                    points.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height
+                    });
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 0.5; // Zmniejszamy szerokość linii
+                ctx.beginPath();
+
+                for (let i = 0; i < points.length; i++) {
+                    for (let j = i + 1; j < points.length; j++) {
+                        const dx = points[i].x - points[j].x;
+                        const dy = points[i].y - points[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < maxDistance) {
+                            ctx.moveTo(points[i].x, points[i].y);
+                            ctx.lineTo(points[j].x, points[j].y);
+                        }
+                    }
+
+                    // Draw lines from the cursor to the points
+                    const dxMouse = points[i].x - mouseX;
+                    const dyMouse = points[i].y - mouseY;
+                    const distanceMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
+
+                    if (distanceMouse < maxDistance) {
+                        ctx.moveTo(mouseX, mouseY);
+                        ctx.lineTo(points[i].x, points[i].y);
+                    }
+                }
+
+                ctx.stroke();
+
+                // Update points positions smoothly
+                for (let i = 0; i < points.length; i++) {
+                    points[i].x += (Math.random() - 0.5) * 0.5; // Mniejsza prędkość
+                    points[i].y += (Math.random() - 0.5) * 0.5;
+
+                    // Wrap points around the canvas
+                    if (points[i].x < 0) points[i].x = width;
+                    if (points[i].x > width) points[i].x = 0;
+                    if (points[i].y < 0) points[i].y = height;
+                    if (points[i].y > height) points[i].y = 0;
+                }
+            }
+
+            function animate() {
+                draw();
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', resize);
+            window.addEventListener('mousemove', event => {
+                mouseX = event.pageX;
+                mouseY = event.pageY;
+            });
+
+            resize();
+            init();
+            animate();
+        });
+    </script>
+</head>
+<body>
+    <!-- Osadzenie lokalnego wideo jako tło -->
+    <video id="video-background" autoplay loop muted>
+        <source src="opnew.mp4" type="video/mp4">
+        Twoja przeglądarka nie obsługuje elementu wideo.
+    </video>
+    
+    <!-- Canvas dla pajęczyn -->
+    <canvas id="canvas-background"></canvas>
+
+    <div class="header">
+        Chuj ci w pysk waflu jebany! 🤡
+    </div>
+    <img src="chief.png" alt="Obraz" class="rotating-image">
+</body>
+</html>
