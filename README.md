@@ -1,1 +1,1 @@
-# opierdol
+# masz podjeb se stronke kurwiaku
